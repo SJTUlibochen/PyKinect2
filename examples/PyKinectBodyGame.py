@@ -53,8 +53,8 @@ class BodyGameRuntime(object):
         self._bodies = None
 
     def draw_body_bone(self, joints, jointPoints, color, joint0, joint1):
-        joint0State = joints[joint0].TrackingState;
-        joint1State = joints[joint1].TrackingState;
+        joint0State = joints[joint0].TrackingState
+        joint1State = joints[joint1].TrackingState
 
         # both joints are not tracked
         if (joint0State == PyKinectV2.TrackingState_NotTracked) or (joint1State == PyKinectV2.TrackingState_NotTracked):
