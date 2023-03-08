@@ -1,16 +1,15 @@
-from pykinect2 import PyKinectV2
-from pykinect2.PyKinectV2 import *
-from pykinect2 import PyKinectRuntime
-
 import ctypes
-import _ctypes
-import pygame
 import sys
 
+import pygame
+
+from pykinect2 import PyKinectRuntime
+from pykinect2 import PyKinectV2
+
 if sys.hexversion >= 0x03000000:
-    import _thread as thread
+    pass
 else:
-    import thread
+    pass
 
 # colors for drawing different bodies 
 SKELETON_COLORS = [pygame.color.THECOLORS["red"], 
