@@ -185,5 +185,5 @@ class BodyGameRuntime(object):
 
 
 __main__ = "Kinect v2 Body Game"
-game = BodyGameRuntime();
-game.run();
+game = BodyGameRuntime()
+game.run()
