@@ -88,7 +88,7 @@ if __name__ == '__main__':
     kinect = KinectDataset()
     dataset_folder_name = str(time.strftime('%Y-%m-%d %H-%M-%S', time.localtime()))
     dataset_folder_path = '../results/%s' % dataset_folder_name
-    color_path = '%s/color' % dataset_folder_path
+    color_path = '%s/rgb' % dataset_folder_path
     depth_path = '%s/depth' % dataset_folder_path
     if not os.path.exists(dataset_folder_path):
         os.makedirs(dataset_folder_path)
