@@ -259,19 +259,19 @@ class Kinect(object):
                     # self.depth_draw = depth_all_draw[:, ::-1, :]
                     n += 1
                 # 获取红外数据
-                # if self._kinect.has_new_infrared_frame():
-                #     # 获得深度图数据
-                #     frame = self._kinect.get_last_infrared_frame()
-                #     # 转换为图像排列
-                #     image_infrared_all = frame.reshape([self._kinect.depth_frame_desc.Height,
-                #                                         self._kinect.depth_frame_desc.Width])
-                #     # 转换为（n，m，1） 形式
-                #     image_infrared_all[image_infrared_all > Infrared_threshold] = 0
-                #     image_infrared_all = image_infrared_all / Infrared_threshold * 255
-                #     self.infrared = image_infrared_all[:, ::-1]
-                #     n += 1
+                if self._kinect.has_new_infrared_frame():
+                    # 获得深度图数据
+                    frame = self._kinect.get_last_infrared_frame()
+                    # 转换为图像排列
+                    image_infrared_all = frame.reshape([self._kinect.depth_frame_desc.Height,
+                                                        self._kinect.depth_frame_desc.Width])
+                    # 转换为（n，m，1） 形式
+                    # image_infrared_all[image_infrared_all > Infrared_threshold] = 0
+                    # image_infrared_all = image_infrared_all / Infrared_threshold * 255
+                    self.infrared = image_infrared_all[:, ::-1]
+                    n += 1
                 t = time.time() - time_s
-                if n == 2:
+                if n == 3:
                     self.first_time = False
                     break
                 elif t > 5:
@@ -322,19 +322,19 @@ class Kinect(object):
                 # self.depth_draw = depth_all_draw[:, ::-1, :]
 
             # 获取红外数据
-            # if self._kinect.has_new_infrared_frame():
-            #     # 获得深度图数据
-            #     frame = self._kinect.get_last_infrared_frame()
-            #     # 转换为图像排列
-            #     image_infrared_all = frame.reshape([self._kinect.depth_frame_desc.Height,
-            #                                         self._kinect.depth_frame_desc.Width])
-            #     # 转换为（n，m，1） 形式
-            #     image_infrared_all[image_infrared_all > Infrared_threshold] = 0
-            #     image_infrared_all = image_infrared_all / Infrared_threshold * 255
-            #     self.infrared = image_infrared_all[:, ::-1]
+            if self._kinect.has_new_infrared_frame():
+                # 获得深度图数据
+                frame = self._kinect.get_last_infrared_frame()
+                # 转换为图像排列
+                image_infrared_all = frame.reshape([self._kinect.depth_frame_desc.Height,
+                                                    self._kinect.depth_frame_desc.Width])
+                # 转换为（n，m，1） 形式
+                # image_infrared_all[image_infrared_all > Infrared_threshold] = 0
+                # image_infrared_all = image_infrared_all / Infrared_threshold * 255
+                self.infrared = image_infrared_all[:, ::-1]
 
-        # return self.color, self.color_draw, self.depth, self.depth_draw, self.infrared
-        return self.color, self.depth
+        return self.color, self.color_draw, self.depth, self.depth_draw, self.infrared
+        # return self.color, self.depth
 
 
 if __name__ == '__main__':
@@ -342,6 +342,6 @@ if __name__ == '__main__':
     while 1:
         t = time.time()
         color_data = a.get_the_data_of_color_depth_infrared_image()
-        cv.imshow('a', color_data[0])
-        cv.imwrite("test.png", color_data[0])
+        cv.imshow('a', color_data[4])
+        # cv.imwrite("test.png", color_data[4])
         cv.waitKey(1)

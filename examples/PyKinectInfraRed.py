@@ -59,7 +59,7 @@ class InfraRedRuntime(object):
         f8 = np.uint8(frame.clip(1, 4000) / 16.)
         frame8bit = np.dstack((f8, f8, f8))
         address = self._kinect.surface_as_array(target_surface.get_buffer())
-        ctypes.memmove(address, frame8bit.ctypes.data, frame8bit.size)
+        ctypes.memmove(address, frame8bit.ctypes.infor, frame8bit.size)
         del address
         target_surface.unlock()
 

@@ -123,7 +123,7 @@ class BodyGameRuntime(object):
     def draw_color_frame(self, frame, target_surface):
         target_surface.lock()
         address = self._kinect.surface_as_array(target_surface.get_buffer())
-        ctypes.memmove(address, frame.ctypes.data, frame.size)
+        ctypes.memmove(address, frame.ctypes.infor, frame.size)
         del address
         target_surface.unlock()
 

@@ -11,84 +11,10 @@
 使用'Esc'键结束数据集生成
 """
 
-from pykinect2 import PyKinectV2, PyKinectRuntime
-from pykinect2.PyKinectV2 import *
-from pykinect2.PyKinectRuntime import PyKinectRuntime
+from pykinect2 import Kinect
 import cv2 as cv
-import numpy as np
-import ctypes
 import time
 import os
-
-
-class KinectDataset(object):
-    def __init__(self):
-        self._kinect = PyKinectRuntime(PyKinectV2.FrameSourceTypes_Color |
-                                       PyKinectV2.FrameSourceTypes_Depth)
-        self._color_data = None
-        self._depth_data = None
-        self._align_color_data = None
-        self._color_time = None
-        self._depth_time = None
-        self._first_time = True
-
-    def get_last_color_data(self):
-        if self._kinect.has_new_color_frame():
-            # 这里获得的frame为一维ndarray
-            frame = self._kinect.get_last_color_frame()
-            # 获得得到frame的时间
-            t_color = time.time()
-            # 返回4通道数据，alpha通道未注册
-            reshape_frame = frame.reshape([self._kinect.color_frame_desc.Height,
-                                           self._kinect.color_frame_desc.Width, 4])
-            # 取出彩色图像数据
-            d_color = reshape_frame[:, :, 0:3]
-        else:
-            d_color = None
-            t_color = None
-        return d_color, t_color
-
-    def get_last_depth_data(self):
-        if self._kinect.has_new_depth_frame():
-            # 这里获得的frame也是一维ndarray
-            frame = self._kinect.get_last_depth_frame()
-            t_depth = time.time()
-            reshape_frame = frame.reshape([self._kinect.depth_frame_desc.Height,
-                                           self._kinect.depth_frame_desc.Width, 1])
-            d_depth = reshape_frame[:, :, :]
-        else:
-            d_depth = None
-            t_depth = None
-        return d_depth, t_depth
-
-    def get_last_color_depth_data(self):
-        if self._first_time:
-            start_time = time.time()
-            while True:
-                now_time = time.time()
-                used_time = now_time - start_time
-                if self.get_last_color_data() is not None and self.get_last_depth_data() is not None:
-                    self._first_time = False
-                    break
-                elif used_time > 5:
-                    raise RuntimeError('连接超时，请使用Kinect Configuration Verifier检查连接')
-        else:
-            self._color_data, self._color_time = self.get_last_color_data()
-            self._depth_data, self._depth_time = self.get_last_depth_data()
-        return self._color_data, self._color_time, self._depth_data, self._depth_time
-
-    def match_depth_and_color(self):
-        depth2color_points_type = _DepthSpacePoint * int(512 * 424)
-        depth2color_points = ctypes.cast(depth2color_points_type(), ctypes.POINTER(_ColorSpacePoint))
-        self._kinect._mapper.MapDepthFrameToColorSpace(
-            ctypes.c_uint(512 * 424), self._kinect._depth_frame_data,
-            ctypes.c_uint(512 * 424), depth2color_points)
-        color_xy = np.copy(np.ctypeslib.as_array(depth2color_points, shape=(424 * 512,)))
-        color_xy = color_xy.view(np.float32).reshape(color_xy.shape + (-1,))
-        color_xy = color_xy.reshape(424, 512, 2).astype(int)
-        color_x = np.clip(color_xy[:, :, 0], 0, 1920 - 1)
-        color_y = np.clip(color_xy[:, :, 1], 0, 1080 - 1)
-        return color_x, color_y
 
 
 def read_txt_file(path_to_txt: str):
@@ -121,7 +47,7 @@ def associate_color_depth(col_txt_dict: dict, dep_txt_dict: dict,
 
 
 if __name__ == '__main__':
-    kinect = KinectDataset()
+    kinect = Kinect.Kinect()
     dataset_folder_name = str(time.strftime('%Y-%m-%d %H-%M-%S', time.localtime()))
     dataset_folder_path = '../datasets/%s' % dataset_folder_name
     color_path = '%s/rgb' % dataset_folder_path
@@ -136,12 +62,12 @@ if __name__ == '__main__':
         print('new dataset folder' + dataset_folder_path + 'created!')
     print('--- show rgb & depth image ---')
     while True:
-        data = kinect.get_last_color_depth_data()
+        infor = kinect.get_last_color_depth_infrared_data()
         align_color_coord = kinect.match_depth_and_color()
-        ori_color_data = data[0]
-        ori_depth_data = data[2]
-        color_time = data[1]
-        depth_time = data[3]
+        ori_color_data = infor[0]
+        ori_depth_data = infor[2]
+        color_time = infor[1]
+        depth_time = infor[3]
         if ori_color_data is not None and ori_depth_data is not None:
             align_color_data = ori_color_data[align_color_coord[1], align_color_coord[0], 0:3]
             cv.namedWindow('ori_color', cv.WINDOW_AUTOSIZE)
