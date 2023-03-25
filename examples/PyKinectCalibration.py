@@ -5,12 +5,17 @@
 使用'Esc'键结束
 """
 
-from pykinect2 import Kinect
+from pykinect2 import PyKinectRuntime, PyKinectV2
+from pykinect2.PyKinectRuntime import PyKinectRuntime
+from pykinect2.PyKinectV2 import *
+from PyKinectDataset import get_last_multi_frame_infor
 import cv2 as cv
 import os
 
 if __name__ == '__main__':
-    kinect = Kinect.Kinect()
+    kinect = PyKinectRuntime(PyKinectV2.FrameSourceTypes_Color |
+                             PyKinectV2.FrameSourceTypes_Depth |
+                             PyKinectV2.FrameSourceTypes_Infrared)
     folder_path = '../calibration'
     color_path = '../calibration/rgb'
     infrared_path = '../calibration/infrared'
@@ -20,7 +25,7 @@ if __name__ == '__main__':
         os.makedirs(color_path)
         os.makedirs(infrared_path)
     while True:
-        infor = kinect.get_last_multi_frame_infor()
+        infor = get_last_multi_frame_infor(kinect)
         color_data = infor[0]
         infrared_data = infor[4]
         if color_data is not None and infrared_data is not None:
