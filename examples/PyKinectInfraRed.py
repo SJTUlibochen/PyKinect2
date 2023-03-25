@@ -77,7 +77,7 @@ class InfraRedRuntime(object):
 
             # --- Getting frames and drawing  
             if self._kinect.has_new_infrared_frame():
-                frame = self._kinect.get_last_infrared_frame()
+                frame = self._kinect.get_last_infrared_frame_data()
                 self.draw_infrared_frame(frame, self._frame_surface)
                 frame = None
 

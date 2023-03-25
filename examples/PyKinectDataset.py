@@ -11,10 +11,44 @@
 使用'Esc'键结束数据集生成
 """
 
-from pykinect2 import Kinect
+from pykinect2 import PyKinectRuntime, PyKinectV2
+from pykinect2.PyKinectRuntime import PyKinectRuntime
+from pykinect2.PyKinectV2 import *
+import numpy as np
 import cv2 as cv
 import time
 import os
+
+
+def get_last_multi_frame_infor(camera):
+    color_frame_data = None
+    color_frame_time = None
+    depth_frame_data = None
+    depth_frame_time = None
+    infrared_frame_data = None
+    infrared_frame_time = None
+    if camera.first_time:
+        start_time = time.time()
+        while True:
+            now_time = time.time()
+            used_time = now_time - start_time
+            color_infor = camera.get_last_color_frame_infor()
+            depth_infor = camera.get_last_depth_frame_infor()
+            infrared_infor = camera.get_last_infrared_frame_infor()
+            if color_infor[1] is not None \
+                    and depth_infor[1] is not None \
+                    and infrared_infor[1] is not None:
+                camera.first_time = False
+                break
+            elif used_time > 5:
+                raise RuntimeError('连接超时，请使用Kinect Configuration Verifier检查连接')
+    else:
+        color_frame_data, color_frame_time = camera.get_last_color_frame_infor()
+        depth_frame_data, depth_frame_time = camera.get_last_depth_frame_infor()
+        infrared_frame_data, infrared_frame_time = camera.get_last_infrared_frame_infor()
+    camera_infor = [color_frame_data, color_frame_time, depth_frame_data,
+                    depth_frame_time, infrared_frame_data, infrared_frame_time]
+    return camera_infor
 
 
 def read_txt_file(path_to_txt: str):
@@ -29,12 +63,12 @@ def read_txt_file(path_to_txt: str):
 
 
 def associate_color_depth(col_txt_dict: dict, dep_txt_dict: dict,
-                          offset: float = 0, max_difference: float = 0.2):
+                          offset: float = 0, max_difference: float = 0.1):
     color_time_list = list(col_txt_dict)
     depth_time_list = list(dep_txt_dict)
     potential_match = [(abs(col - (dep + offset)), col, dep)
-                       for col in depth_time_list
-                       for dep in color_time_list
+                       for col in color_time_list
+                       for dep in depth_time_list
                        if abs(col - (dep + offset)) < max_difference]
     match = []
     for diff, col, dep in potential_match:
@@ -47,7 +81,9 @@ def associate_color_depth(col_txt_dict: dict, dep_txt_dict: dict,
 
 
 if __name__ == '__main__':
-    kinect = Kinect.Kinect()
+    kinect = PyKinectRuntime(PyKinectV2.FrameSourceTypes_Color |
+                             PyKinectV2.FrameSourceTypes_Depth |
+                             PyKinectV2.FrameSourceTypes_Infrared)
     dataset_folder_name = str(time.strftime('%Y-%m-%d %H-%M-%S', time.localtime()))
     dataset_folder_path = '../datasets/%s' % dataset_folder_name
     color_path = '%s/rgb' % dataset_folder_path
@@ -59,34 +95,47 @@ if __name__ == '__main__':
         os.makedirs(dataset_folder_path)
         os.makedirs(color_path)
         os.makedirs(depth_path)
-        print('new dataset folder' + dataset_folder_path + 'created!')
+        print('new dataset folder ' + dataset_folder_path + ' created!')
     print('--- show rgb & depth image ---')
+    print('press Esc to exit')
     while True:
-        infor = kinect.get_last_color_depth_infrared_data()
-        align_color_coord = kinect.match_depth_and_color()
-        ori_color_data = infor[0]
-        ori_depth_data = infor[2]
+        infor = get_last_multi_frame_infor(kinect)
+        ori_color_image = infor[0]
+        ori_depth_image = infor[2]
         color_time = infor[1]
         depth_time = infor[3]
-        if ori_color_data is not None and ori_depth_data is not None:
-            align_color_data = ori_color_data[align_color_coord[1], align_color_coord[0], 0:3]
+        align_color_x, align_color_y = kinect.map_depth_to_color()
+        if ori_color_image is not None and ori_depth_image is not None:
+            align_color_image = ori_color_image[align_color_y, align_color_x, 0:3]
+            enhanced_depth_image = ori_depth_image * (2 ** 3)
+
+            ori_color_image_flip = cv.flip(ori_color_image, 1)
             cv.namedWindow('ori_color', cv.WINDOW_AUTOSIZE)
-            cv.imshow('ori_color', ori_color_data)
+            cv.imshow('ori_color', ori_color_image_flip)
+
+            align_color_image_flip = cv.flip(align_color_image, 1)
             cv.namedWindow('align_color', cv.WINDOW_AUTOSIZE)
-            cv.imshow('align_color', align_color_data)
+            cv.imshow('align_color', align_color_image_flip)
             color_file = '%s/%f.png' % (color_path, color_time)
-            cv.imwrite(color_file, align_color_data)
+            cv.imwrite(color_file, align_color_image_flip)
             color_txt_content = '%f rgb/%f.png' % (color_time, color_time)
             with open(color_txt, 'a+') as c:
                 c.write(color_txt_content + '\n')
+
+            enhanced_depth_image_flip = cv.flip(enhanced_depth_image, 1)
+            cv.namedWindow('ehd_depth', cv.WINDOW_AUTOSIZE)
+            cv.imshow('ehd_depth', enhanced_depth_image_flip)
+
+            ori_depth_image_flip = cv.flip(ori_depth_image, 1)
             cv.namedWindow('depth', cv.WINDOW_AUTOSIZE)
-            cv.imshow('depth', ori_depth_data)
+            cv.imshow('depth', ori_depth_image_flip)
             depth_file = '%s/%f.png' % (depth_path, depth_time)
-            cv.imwrite(depth_file, ori_depth_data)
+            cv.imwrite(depth_file, ori_depth_image_flip)
             depth_txt_content = '%f depth/%f.png' % (depth_time, depth_time)
             with open(depth_txt, 'a+') as d:
                 d.write(depth_txt_content + '\n')
         if cv.waitKey(1) == 27:
+            cv.destroyAllWindows()
             break
     print('--- create association txt ---')
     color_txt_dict = read_txt_file(color_txt)
@@ -97,3 +146,6 @@ if __name__ == '__main__':
         for c, d in matches:
             content = '%f %s %f %s' % (c, ' '.join(color_txt_dict[c]), d, ' '.join(depth_txt_dict[d]))
             a.write(content + '\n')
+    print('association.txt created!')
+    print('--- --- ---')
+    print('fig pack created!')

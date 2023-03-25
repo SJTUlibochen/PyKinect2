@@ -20,7 +20,7 @@ if __name__ == '__main__':
         os.makedirs(color_path)
         os.makedirs(infrared_path)
     while True:
-        infor = kinect.get_last_color_depth_infrared_data()
+        infor = kinect.get_last_multi_frame_infor()
         color_data = infor[0]
         infrared_data = infor[4]
         if color_data is not None and infrared_data is not None:

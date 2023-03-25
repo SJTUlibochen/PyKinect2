@@ -23,6 +23,7 @@ import math
 import cv2 as cv
 import time
 import copy
+import os
 
 
 class Kinect(object):
@@ -59,7 +60,7 @@ class Kinect(object):
         """
         if self._kinect.has_new_color_frame():
             # 获得的图像数据是二维的，需要转换为需要的格式
-            frame = self._kinect.get_last_color_frame()
+            frame = self._kinect.get_last_color_frame_data()
             # 返回的是4通道，还有一通道是没有注册的
             gbra = frame.reshape([self._kinect.color_frame_desc.Height, self._kinect.color_frame_desc.Width, 4])
             # 取出彩色图像数据
@@ -78,7 +79,7 @@ class Kinect(object):
         """
         if self._kinect.has_new_depth_frame():
             # 获得深度图数据
-            frame = self._kinect.get_last_depth_frame()
+            frame = self._kinect.get_last_depth_frame_data()
             # 转换为图像排列
             image_depth_all = frame.reshape([self._kinect.depth_frame_desc.Height,
                                              self._kinect.depth_frame_desc.Width])
@@ -98,7 +99,7 @@ class Kinect(object):
         """
         if self._kinect.has_new_infrared_frame():
             # 获得深度图数据
-            frame = self._kinect.get_last_infrared_frame()
+            frame = self._kinect.get_last_infrared_frame_data()
             # 转换为图像排列
             image_infrared_all = frame.reshape([self._kinect.infrared_frame_desc.Height,
                                                 self._kinect.infrared_frame_desc.Width])
@@ -217,24 +218,24 @@ class Kinect(object):
                 n = 0
                 if self._kinect.has_new_color_frame():
                     #                 # 获得的图像数据是二维的，需要转换为需要的格式
-                    frame = self._kinect.get_last_color_frame()
+                    frame = self._kinect.get_last_color_frame_data()
                     # 返回的是4通道，还有一通道是没有注册的
                     gbra = frame.reshape([self._kinect.color_frame_desc.Height, self._kinect.color_frame_desc.Width, 4])
                     # 取出彩色图像数据
                     # self.color = gbra[:, :, 0:3]
                     self.color = gbra[:, :, 0:3][:, ::-1, :]
-                    # # 这是因为在python中直接复制该图像的效率不如直接再从C++中获取一帧来的快
-                    # frame = self._kinect.get_last_color_frame()
-                    # # 返回的是4通道，还有一通道是没有注册的
-                    # gbra = frame.reshape([self._kinect.color_frame_desc.Height, self._kinect.color_frame_desc.Width, 4])
-                    # # 取出彩色图像数据
-                    # # self.color_draw = gbra[:, :, 0:3][:,::-1,:]
-                    # self.color_draw = gbra[:, :, 0:3][:, ::-1, :]
+                    # 这是因为在python中直接复制该图像的效率不如直接再从C++中获取一帧来的快
+                    frame = self._kinect.get_last_color_frame_data()
+                    # 返回的是4通道，还有一通道是没有注册的
+                    gbra = frame.reshape([self._kinect.color_frame_desc.Height, self._kinect.color_frame_desc.Width, 4])
+                    # 取出彩色图像数据
+                    # self.color_draw = gbra[:, :, 0:3][:,::-1,:]
+                    self.color_draw = gbra[:, :, 0:3][:, ::-1, :]
                     n += 1
                 # 访问新的Depth帧
                 if self._kinect.has_new_depth_frame():
                     # 获得深度图数据
-                    frame = self._kinect.get_last_depth_frame()
+                    frame = self._kinect.get_last_depth_frame_data()
                     # 转换为图像排列
                     image_depth_all = frame.reshape([self._kinect.depth_frame_desc.Height,
                                                      self._kinect.depth_frame_desc.Width])
@@ -245,23 +246,23 @@ class Kinect(object):
                     self.depth = np.squeeze(image_depth_all)[:, ::-1]
 
                     """————————————————(2019/5/11)——————————————————"""
-                    # # 获得深度图数据
-                    # frame = self._kinect.get_last_depth_frame()
-                    # # 转换为图像排列
-                    # depth_all_draw = frame.reshape([self._kinect.depth_frame_desc.Height,
-                    #                                 self._kinect.depth_frame_desc.Width])
-                    # # 转换为（n，m，1） 形式
-                    # depth_all_draw = depth_all_draw.reshape(
-                    #     [self._kinect.depth_frame_desc.Height, self._kinect.depth_frame_desc.Width, 1])
-                    # depth_all_draw[depth_all_draw >= 1500] = 0
-                    # depth_all_draw[depth_all_draw <= 500] = 0
-                    # depth_all_draw = np.uint8(depth_all_draw / 1501 * 255)
-                    # self.depth_draw = depth_all_draw[:, ::-1, :]
+                    # 获得深度图数据
+                    frame = self._kinect.get_last_depth_frame_data()
+                    # 转换为图像排列
+                    depth_all_draw = frame.reshape([self._kinect.depth_frame_desc.Height,
+                                                    self._kinect.depth_frame_desc.Width])
+                    # 转换为（n，m，1） 形式
+                    depth_all_draw = depth_all_draw.reshape(
+                        [self._kinect.depth_frame_desc.Height, self._kinect.depth_frame_desc.Width, 1])
+                    depth_all_draw[depth_all_draw >= 1500] = 1500
+                    depth_all_draw[depth_all_draw <= 500] = 0
+                    depth_all_draw = np.uint8(depth_all_draw / 1501 * 255)
+                    self.depth_draw = depth_all_draw[:, ::-1, :]
                     n += 1
                 # 获取红外数据
                 if self._kinect.has_new_infrared_frame():
                     # 获得深度图数据
-                    frame = self._kinect.get_last_infrared_frame()
+                    frame = self._kinect.get_last_infrared_frame_data()
                     # 转换为图像排列
                     image_infrared_all = frame.reshape([self._kinect.depth_frame_desc.Height,
                                                         self._kinect.depth_frame_desc.Width])
@@ -280,24 +281,24 @@ class Kinect(object):
         else:
             if self._kinect.has_new_color_frame():
                 #                 # 获得的图像数据是二维的，需要转换为需要的格式
-                frame = self._kinect.get_last_color_frame()
+                frame = self._kinect.get_last_color_frame_data()
                 # 返回的是4通道，还有一通道是没有注册的
                 gbra = frame.reshape([self._kinect.color_frame_desc.Height, self._kinect.color_frame_desc.Width, 4])
                 # 取出彩色图像数据
                 # self.color = gbra[:, :, 0:3]
                 self.color = gbra[:, :, 0:3][:, ::-1, :]
-                # # 这是因为在python中直接复制该图像的效率不如直接再从C++中获取一帧来的快
-                # frame = self._kinect.get_last_color_frame()
-                # # 返回的是4通道，还有一通道是没有注册的
-                # gbra = frame.reshape([self._kinect.color_frame_desc.Height, self._kinect.color_frame_desc.Width, 4])
-                # # 取出彩色图像数据
-                # # self.color_draw = gbra[:, :, 0:3][:,::-1,:]
-                # self.color_draw = gbra[:, :, 0:3][:, ::-1, :]
+                # 这是因为在python中直接复制该图像的效率不如直接再从C++中获取一帧来的快
+                frame = self._kinect.get_last_color_frame_data()
+                # 返回的是4通道，还有一通道是没有注册的
+                gbra = frame.reshape([self._kinect.color_frame_desc.Height, self._kinect.color_frame_desc.Width, 4])
+                # 取出彩色图像数据
+                # self.color_draw = gbra[:, :, 0:3][:,::-1,:]
+                self.color_draw = gbra[:, :, 0:3][:, ::-1, :]
 
             # 访问新的Depth帧
             if self._kinect.has_new_depth_frame():
                 # 获得深度图数据
-                frame = self._kinect.get_last_depth_frame()
+                frame = self._kinect.get_last_depth_frame_data()
                 # 转换为图像排列
                 image_depth_all = frame.reshape([self._kinect.depth_frame_desc.Height,
                                                  self._kinect.depth_frame_desc.Width])
@@ -307,24 +308,32 @@ class Kinect(object):
                 self.depth_ori = np.squeeze(image_depth_all)
                 self.depth = np.squeeze(image_depth_all)[:, ::-1]
 
-                # """————————————————(2019/5/11)——————————————————"""
-                # # 获得深度图数据
-                # frame = self._kinect.get_last_depth_frame()
-                # # 转换为图像排列
-                # depth_all_draw = frame.reshape([self._kinect.depth_frame_desc.Height,
-                #                                 self._kinect.depth_frame_desc.Width])
-                # # 转换为（n，m，1） 形式
-                # depth_all_draw = depth_all_draw.reshape(
-                #     [self._kinect.depth_frame_desc.Height, self._kinect.depth_frame_desc.Width, 1])
-                # depth_all_draw[depth_all_draw >= 1500] = 0
-                # depth_all_draw[depth_all_draw <= 500] = 0
-                # depth_all_draw = np.uint8(depth_all_draw / 1501 * 255)
-                # self.depth_draw = depth_all_draw[:, ::-1, :]
+                """————————————————(2019/5/11)——————————————————"""
+                # 获得深度图数据
+                frame = self._kinect.get_last_depth_frame_data()
+                # 转换为图像排列
+                depth_all_draw = frame.reshape([self._kinect.depth_frame_desc.Height,
+                                                self._kinect.depth_frame_desc.Width])
+                # 转换为（n，m，1） 形式
+                depth_all_draw = depth_all_draw.reshape(
+                    [self._kinect.depth_frame_desc.Height, self._kinect.depth_frame_desc.Width, 1])
+                # with open('test.txt', 'w') as a:
+                #     for row in range(424):
+                #         for col in range(512):
+                #             a.write(str(depth_all_draw[row, col, 0]))
+                #             a.write(' ')
+                #         a.write('\n')
+                # kinect v2深度检测范围在0.5~4.5m，depth frame的返回值单位为mm，故返回值在500~4500，其余都是0
+                # 16位深度图范围在0~65535，故乘以2^3效果较好
+                depth_all_draw[depth_all_draw >= 4500] = 0
+                depth_all_draw[depth_all_draw <= 500] = 0
+                depth_all_draw = np.uint16(depth_all_draw * 8)
+                self.depth_draw = depth_all_draw[:, ::-1, :]
 
             # 获取红外数据
             if self._kinect.has_new_infrared_frame():
                 # 获得深度图数据
-                frame = self._kinect.get_last_infrared_frame()
+                frame = self._kinect.get_last_infrared_frame_data()
                 # 转换为图像排列
                 image_infrared_all = frame.reshape([self._kinect.depth_frame_desc.Height,
                                                     self._kinect.depth_frame_desc.Width])
@@ -342,6 +351,6 @@ if __name__ == '__main__':
     while 1:
         t = time.time()
         color_data = a.get_the_data_of_color_depth_infrared_image()
-        cv.imshow('a', color_data[4])
-        # cv.imwrite("test.png", color_data[4])
+        cv.imshow('a', color_data[3])
+        # cv.imwrite("test.png", color_data[3])
         cv.waitKey(1)
